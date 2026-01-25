@@ -2,34 +2,29 @@
 import { AttendanceRecord } from '../types';
 
 /**
- * URL Google Apps Script Web App Anda.
- * Deploy skrip ini di akun Google tujuan (tempat Sheet & Drive berada).
- * Pastikan akses diatur ke "Anyone" agar aplikasi bisa mengirim data.
+ * Endpoint Cloud Server untuk centervarian@gmail.com
+ * URL ini akan menerima data presensi, koordinat, dan foto (base64).
  */
-const GOOGLE_SCRIPT_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzL8zdYj-Y4xSJoAyYvbOpEe3cpXEE86Fy2fetlByHIlYZTe50fFJ_whxJ7gXQJjqETRg/exec';
 
 export const submitToGoogleSheets = async (record: AttendanceRecord): Promise<boolean> => {
-  console.log("Menghubungkan ke Cloud Server (Akun Eksternal)...", record.studentName);
-
-  // Jika URL belum diisi, kita tetap gunakan simulasi sukses agar aplikasi tidak error saat testing
-  if (GOOGLE_SCRIPT_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL') {
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    return true; 
-  }
+  console.log("Sinkronisasi ke centervarian@gmail.com...", record.studentName);
 
   try {
     const response = await fetch(GOOGLE_SCRIPT_URL, {
       method: 'POST',
-      mode: 'no-cors', // Penting untuk Google Apps Script
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(record)
+      mode: 'no-cors', // Penting agar tidak terblokir CORS saat memanggil Apps Script dari browser
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(record),
     });
 
-    // Karena mode 'no-cors', kita tidak bisa membaca response body secara detail,
-    // tapi biasanya jika tidak ada error network, pengiriman dianggap berhasil.
+    // Pada mode 'no-cors', kita tidak bisa mendapatkan status response secara detail (selalu 0),
+    // namun jika tidak masuk ke blok catch, diasumsikan request telah terkirim ke server Google.
     return true;
   } catch (error) {
-    console.error("Gagal sinkronisasi cloud:", error);
-    return false; // Tetap simpan di lokal jika gagal
+    console.error("Cloud Sync Error:", error);
+    return false;
   }
 };
