@@ -1,0 +1,8 @@
+{
+  "name": "E-Absensi Digital ERDI",
+  "description": "A futuristic student attendance application with GPS tracking, camera verification, and offline storage capabilities.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}
