@@ -2,29 +2,43 @@
 import { AttendanceRecord } from '../types';
 
 /**
- * Endpoint Cloud Server untuk centervarian@gmail.com
- * URL ini akan menerima data presensi, koordinat, dan foto (base64).
+ * URL Google Apps Script Web App Anda yang baru.
+ * Pastikan Deployment disetel ke "Anyone" (Siapa saja) di Google Apps Script.
  */
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzL8zdYj-Y4xSJoAyYvbOpEe3cpXEE86Fy2fetlByHIlYZTe50fFJ_whxJ7gXQJjqETRg/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxqY6GbrFZtz7BDAmAtjuvT0ngL28H8ThM6GJS0bSclHfAJvO0UyNBKa_l7AEPYbrzRIw/exec';
 
 export const submitToGoogleSheets = async (record: AttendanceRecord): Promise<boolean> => {
-  console.log("Sinkronisasi ke centervarian@gmail.com...", record.studentName);
+  console.log("Sinkronisasi ke Cloud VC...", record.studentName);
 
   try {
-    const response = await fetch(GOOGLE_SCRIPT_URL, {
+    // Mengirim payload yang sesuai dengan struktur data di skrip Anda
+    const payload = {
+      id: record.id,
+      studentName: record.studentName,
+      paket: record.paket,
+      kelas: record.kelas,
+      keterangan: record.keterangan,
+      timestamp: record.timestamp,
+      latitude: record.latitude,
+      longitude: record.longitude,
+      address: record.address,
+      imageUrl: record.imageUrl // Skrip Anda akan melakukan decode base64 dari ini
+    };
+
+    await fetch(GOOGLE_SCRIPT_URL, {
       method: 'POST',
-      mode: 'no-cors', // Penting agar tidak terblokir CORS saat memanggil Apps Script dari browser
+      mode: 'no-cors', // Penting untuk bypass CORS pada Google Apps Script
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(record),
+      body: JSON.stringify(payload)
     });
 
-    // Pada mode 'no-cors', kita tidak bisa mendapatkan status response secara detail (selalu 0),
-    // namun jika tidak masuk ke blok catch, diasumsikan request telah terkirim ke server Google.
+    // Pada mode no-cors, kita tidak bisa membaca response body, 
+    // namun jika fetch selesai tanpa error network, data dianggap terkirim.
     return true;
   } catch (error) {
-    console.error("Cloud Sync Error:", error);
+    console.error("Gagal sinkronisasi cloud:", error);
     return false;
   }
 };
