@@ -45,8 +45,14 @@ const App: React.FC = () => {
     loadHistory();
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
 
+    // Cek apakah aplikasi sudah dalam mode standalone (terinstal)
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
+
     // PWA Install Prompt Listener
     window.addEventListener('beforeinstallprompt', (e) => {
+      // Jangan tampilkan banner jika sudah terinstal
+      if (isStandalone) return;
+      
       e.preventDefault();
       setDeferredPrompt(e);
       setShowInstallBanner(true);
@@ -58,7 +64,9 @@ const App: React.FC = () => {
       console.log('PWA Installed successfully');
     });
 
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+    };
   }, []);
 
   const handleInstallClick = async () => {
