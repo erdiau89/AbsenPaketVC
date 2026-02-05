@@ -30,6 +30,10 @@ const App: React.FC = () => {
   const [attendanceHistory, setAttendanceHistory] = useState<AttendanceRecord[]>([]);
   const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
   const [gpsError, setGpsError] = useState(false);
+  
+  // PWA Install State
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
 
   useEffect(() => {
     const profile = getProfile();
@@ -40,8 +44,32 @@ const App: React.FC = () => {
     }
     loadHistory();
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+
+    // PWA Install Prompt Listener
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallBanner(true);
+    });
+
+    window.addEventListener('appinstalled', () => {
+      setShowInstallBanner(false);
+      setDeferredPrompt(null);
+      console.log('PWA Installed successfully');
+    });
+
     return () => clearInterval(timer);
   }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setShowInstallBanner(false);
+    }
+    setDeferredPrompt(null);
+  };
 
   useEffect(() => {
     if (studentName || selectedPaket || selectedKelas) {
@@ -275,7 +303,6 @@ const App: React.FC = () => {
           </h1>
         </div>
         <div className="text-right">
-          {/* Tambahan Tanggal Kecil Di Atas Jam */}
           <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mono -mb-1">
             {currentTime.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
           </p>
@@ -310,6 +337,27 @@ const App: React.FC = () => {
       {activeTab === 'attendance' ? (
         <div className="flex-1 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-32">
           
+          {/* PWA Install Banner */}
+          {showInstallBanner && (
+            <div className="glass-morphism p-4 rounded-3xl border border-indigo-500/30 bg-indigo-500/5 flex items-center justify-between animate-bounce-subtle">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-indigo-500 rounded-xl">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5"></path></svg>
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-white uppercase tracking-wider">Akses Lebih Cepat</p>
+                  <p className="text-[9px] font-bold text-indigo-300 uppercase">Pasang di Layar Utama</p>
+                </div>
+              </div>
+              <button 
+                onClick={handleInstallClick}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all"
+              >
+                INSTAL
+              </button>
+            </div>
+          )}
+
           {/* Real-time Location Info Card */}
           <div className="glass-morphism p-5 rounded-3xl border border-cyan-500/10 shadow-[0_0_30px_rgba(34,211,238,0.05)]">
              <div className="flex justify-between items-start mb-3">
@@ -465,6 +513,7 @@ const App: React.FC = () => {
         </div>
       ) : (
         <div className="flex-1 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-y-auto hide-scrollbar pb-32">
+          {/* History Header */}
           <div className="flex justify-between items-center px-2">
             <div>
               <h2 className="text-xl font-black text-white italic tracking-tighter">History Log</h2>
@@ -540,10 +589,9 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Detail Modal - Fixed for Scrollability */}
+      {/* Detail Modal */}
       {selectedRecord && (
         <div className="fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-3xl flex flex-col animate-in fade-in zoom-in-95 duration-300">
-          {/* Modal Header */}
           <div className="flex justify-between items-center p-8 shrink-0">
             <div className="space-y-1">
               <h2 className="text-2xl font-black italic tracking-tighter text-white">LOG_DETAILS</h2>
@@ -554,7 +602,6 @@ const App: React.FC = () => {
             </button>
           </div>
           
-          {/* Scrollable Modal Content */}
           <div className="flex-1 px-8 overflow-y-auto hide-scrollbar space-y-8 pb-32">
             <div className="neo-card overflow-hidden border border-white/10 shadow-2xl relative group bg-slate-900">
               <img src={selectedRecord.imageUrl} className="w-full h-auto" alt="Verified Presence" />
@@ -576,7 +623,6 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Modal Bottom Buttons */}
             <div className="grid grid-cols-2 gap-4">
                <button 
                   onClick={() => downloadImage(selectedRecord.imageUrl, selectedRecord.studentName)}
